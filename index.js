@@ -1,116 +1,213 @@
-
-
-// Imports express to the package
-const express = require('express'),
-  bodyParser = require('body-parser'),
-  uuid = require('uuid');
-//To import morgan into my package
-//const morgan = require('morgan');
-
-
-// Declares a new variable to encapsulate the Express's functionality.
+const express = require('express');
+const morgan = require('morgan');
+const bodyParser = require('body-parser');
+const uuid = require('uuid');
 const app = express();
-// Top 10 movies of all time.
-let movies = [{
-        id: 1,
-        title: " The Lion King",
-        director: "Roger Allers, Rob Minkoff",
-        genres: "Adventure",
-    },
-    {
-       id: 2,
-        title: "Modern Times",
-        director: "Charles Chaplin",
-        genres: "Comedy",
-    }, {
-        id: 3,
-        title: "Taxi Driver",
-        director: "Martin Scorsese",
-        genres: "Drama Thriller",
-    }, {
-        id: 4,
-        title: "Once Upon a Time in the West",
-        director: "Sergio Leone",
-        genres: "Western",
-    }, {
-        id: 5,
-        title: "Super Bad",
-        director: "Greg Mottola",
-        genres: "Comedy",
-    }, {
-        id: 6,
-        title: "Alien",
-        director: "Ridley Scott",
-        genres: "Horror",
-    }, {
-        id: 7,
-        title: "Joker",
-        director: "Todd Phillips",
-        genres: "Crime",
-    }, {
-        id: 8,
-        title: "3 Idiots",
-        director: "Rajkumar Hirani",
-        genres: "Comedy",
-    }, {
-        id: 9,
-        title: "Spider-Man",
-        director: "Bob Persichetti",
-        genres: "Animation",
-    }, {
-        id: 10,
-        title: "The Godfather",
-        director: "Francis Ford Coppola",
-        genres: "Crime",
+const mongoose = require('mongoose');
+const Models = require('./models.js');
+const cors = require('cors');
+const { check, validationResult } = require('express-validator');
+const PORT = process.env.PORT || 8080;
+
+
+const Users = Models.User;
+const Movies = Models.Movie;
+
+      //Mongoose connection
+// mongoose.connect('mongodb://localhost:27017/movieAppDB', {useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.connect( process.env.CONNECTION_URI , {useNewUrlParser: true, useUnifiedTopology: true}).then(() => console.log("Connection Successful"))
+.catch((err) => console.log(err));
+
+let allowedOrigins = ['http://localhost:8080', 'http://testsite.com', 'http://localhost:1234'];
+
+
+// Configure CORS
+app.use(cors({
+    origin: (origin, callback) => {
+        if(!origin) return callback(null, true);
+        if( allowedOrigins.indexOf(origin) === -1) {
+            return callback(new Error( `Access from '${origin}' denied.`), false);
+        }
+        return callback(null, true);
     }
-];
+}));
 
-//Serving static files middleware
-
+app.use(morgan('common'));
 app.use(express.static('public'));
-//app.use(morgan('common'));
+app.use(bodyParser.json());
 
-// GET route located at the endpoint "/" that return a default textual respomse
-app.get("/", (req, res) => {
-    res.send("Welcome to my movie API!");
-});
+//authentication
+let auth = require('./auth')(app);
+const passport = require('passport');
+require('./passport');
 
-//Express GET route located at the endpoint "/movies" that return a JSON object containing data about my top ten movies
-app.get("/movies", (req, res) => {
-    res.json(movies);
-});
+// Home Page
+app.get('/', (req, res) => {
+    res.send("Welcome to the homepage.");
+})
 
-// Gets the data about a single movie, by title
-app.get('/movies/:title', (req, res) => {
-    res.json(
-        movies.find((movie) => {
-            return movie.title === req.params.title
+// Return all the movies in json format
+app.get('/movies', passport.authenticate('jwt', {session: false}), (req, res) => {
+    Movies.find().then((movies) => {
+        res.status(201).json(movies)
+    }).catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    })
+})
+
+// Return a movie by title
+app.get('/movies/:title', passport.authenticate('jwt', {session: false}), (req, res) => {
+    Movies.findOne({title: req.params.title}).then((movie) => {
+        res.status(201).json(movie);
+    }).catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    })
+})
+
+// Return details about a genre
+app.get('/movies/genres/:genre_name', passport.authenticate('jwt', {session: false}), (req,res) => {
+    Movies.findOne({"genre.name": req.params.genre_name}).then((response) => {
+        if (!response) {
+            res.status(404).send('The genre you are looking for does not exist in our database.');
+        }else {
+            res.status(200).json(response.genre);
+        }
+    }).catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    })
+})
+
+// Return a director by name
+app.get('/movies/details/directors/:director_name', passport.authenticate('jwt', {session: false}), (req, res) => {
+    Movies.findOne({"director.name": req.params.director_name}).then((response) => {
+        if (!response) {
+            res.status(404).send('The director you are looking for does not exist in our database.');
+        }else {
+            res.status(200).json(response.director);
+        }
+    }).catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    })
+})
+
+// Create a new user
+app.post('/users', [
+        // Configure the validation of req.body
+        check('username', 'Username is required').isLength({min: 5, max: 20}),
+        check('username', 'Only alphanumeric characters are allowed'). isAlphanumeric(),
+        check('pwd', 'Password is required').not().isEmpty(),
+        check('email', 'Email not valid'). isEmail()
+    ],(req, res) => {
+        // Check the validation object for errors
+        let errors = validationResult(req);
+
+        if(!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array() });
+        }
+
+    let encryptedPassword = Users.hashPassword(req.body.pwd);
+    Users.findOne({username: req.body.username}).then((response) => {
+        if (response) {
+            res.status(400).send(req.body.username + ' already exist.');
+        }else {
+            Users.create({
+                username: req.body.username,
+                pwd: encryptedPassword,
+                email: req.body.email,
+                birth_date: req.body.birth_date
+            }).then((user) => {
+                res.status(201).json(user);
+            }).catch((err) => {
+                console.error(err);
+                res.status(500).send('Error: ' + err);
+            })
+        }
+    }).catch((err) => {
+        res.status(500).send('Error: ' + err);
+    })
+})
+
+// Update user info
+app.put('/users/:username', passport.authenticate('jwt', {session: false}), [
+        check('username', 'Username is required').isLength({min: 5, max: 20}),
+        check('username', 'Only alphanumeric characters are allowed').isAlphanumeric(),
+        check('pwd', 'Password is required').not().isEmpty(),
+        check('email', 'Email not valid').isEmail()
+    ],(req, res) => {
+        //config the validation
+        let errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+    let encryptedPassword = Users.hashPassword(req.body.pwd);
+    Users.findOneAndUpdate({username: req.params.username}, {
+        $set: {
+            username: req.body.username,
+            pwd: encryptedPassword,
+            email: req.body.email,
+            birth_date: req.body.birth_date
+        }},
+        {new: true},
+        (err, updatedUser) => {
+            if (err) {
+                console.error(err);
+                res.status(500).send('Error: ' + err);
+            }else {
+                res.status(201).json(updatedUser);
+            }
         })
-    );
-});
+})
 
-// Adds data for a new movie to our list of movies.
-app.post('/movies', (req, res) => {
-  let newMovie = req.body;
+// Add a movie as favorite
+app.post('/users/:username/favorites/:movie_id', passport.authenticate('jwt', {session: false}), (req, res) => {
+    Users.findOneAndUpdate({username: req.params.username}, {
+        $addToSet: { favorite_movies: req.params.movie_id }
+    },
+    {new: true},
+    (err, updatedFavorites) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        }else {
+            res.status(200).json(updatedFavorites);
+        }
+    })
+})
 
-  if (!newMovie.title) {
-    const message = 'Missing name in request body';
-    res.status(400).send(message);
-  } else {
-    newMovie.title = uuid.v4();
-    movies.push(newMovie);
-    res.status(201).send(newMovie);
-  }
-});
-// Deletes a movie from our list by ID
-app.delete('/movies/:id', (req, res) => {
-  let movie = movies.find((movie) => { return movie.id === req.params.id });
+// Delete a movie from favorites by the title of the movie
+app.delete('/users/:username/favorites/:movie_id', passport.authenticate('jwt', {session: false}), (req, res) => {
+    Users.findOneAndUpdate({username: req.params.username}, {
+        $pull: { favorite_movies: req.params.movie_id }
+    },
+    {new: true},
+    (err, updatedFavorites) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        }else {
+            res.status(200).json(updatedFavorites);
+        }
+    })
+})
 
-  if (movie) {
-    movies = movies.filter((obj) => { return obj.id !== req.params.id });
-    res.status(201).send('Movie ' + req.params.id + ' was deleted.');
-  }
-});
+// Delete account by the username of the user
+app.delete('/users/:username', passport.authenticate('jwt', {session: false}), (req, res) => {
+   Users.findOneAndRemove({username: req.params.username}).then((user) => {
+       if(!user) {
+           res.status(400).send(req.params.username + ' was not found');
+       }else {
+           res.status(200).send( req.params.username + ' has been deleted');
+       }
+   }).catch((err) => {
+       console.error(err);
+       res.status(500).send('Error: ' + err);
+   })
+})
 
 
 // Error handling.
@@ -120,6 +217,7 @@ app.use(function (err, req, res, next) {
 });
 
 // listen for requests
+const port = process.env.PORT || 8080;
 app.listen(8080, () =>{
   console.log('Your app is listening on port 8080.');
 });
