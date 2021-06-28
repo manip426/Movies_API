@@ -49,7 +49,27 @@
             <td>/movies</td>
             <td>None</td>
             <td>None</td>
-            <td>A JSON object holding data about all movies</td>
+            <td>
+              A JSON object holding data about all movies. Format:<br>
+              {
+                <span>Genre:</span> {<br>
+                <span>Name:</span> String,<br>
+                <span>Description:</span> String,<br>
+                },<br>
+                <span>Director:</span> {<br>
+                <span>Name:</span> String,<br>
+                <span>Bio:</span> String,<br>
+                <span>Birth:</span> Date,<br>
+                <span>Death:</span> Date<br>
+                },<br>
+                <span>Actors:</span> [],<br>
+                <span>_id:</span> 12-byte BSON type,<br>
+                <span>Title:</span>: String,<br>
+                <span>Description:</span> String,<br>
+                <span>ImagePath:</span> String,<br>
+                <span>Featured:</span> Boolean<br>
+              }
+            </td>
           </tr>
           <tr>
             <td>Return data (description, genre, director, image URL, whether it’s featured or not) about a single movie by title to the user</td>
@@ -58,34 +78,103 @@
             <td>/movies/:Title</td>
             <td>None</td>
             <td>
-              A JSON object holding data about a single movie. Example:<br>
+              A JSON object holding data about a single movie. Format:<br>
               {
-                "Description": "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",<br>
-                "Genre": " Drama",<br>
-                "Director": "Frank Darabont",<br>
-                "image_URL": "https://m.media-amazon.com/images/M/MV5BNjQ2NDA3MDcxMF5BMl5BanBnXkFtZTgwMjE5NTU0NzE@._V1_CR0,60,640,360_AL_UX477_CR0,0,477,268_AL_.jpg"<br>
+                <span>Genre</span>: {<br>
+                  <span>Name</span>:<br>
+                  <span>Description</span>: String<br>
+                },<br>
+                <span>Director</span>: {<br>
+                  <span>Name</span>: String,<br>
+                  <span>Bio</span>: String,<br>
+                  <span>Birth</span>: Date<br>
+                },<br>
+                <span>Actors</span>: [String],<br>
+                <span>_id</span>: 12-byte BSON type,<br>
+                <span>Title</span>: String,<br>
+                <span>Description</span>: String,<br>
+                <span>ImagePath</span>: String,<br>
+                <span>Featured</span>: Boolean<br>
               }
             </td>
           </tr>
           <tr>
-            <td>Add data for new movies</td>
-            <td>POST</td>
-            <td>/movies</td>
+            <td>Return data about a genre (description) by name/title (e.g., “Thriller”)</td>
+            <td>GET</td>
+            <td>/movies/genres/[Genre]</td>
+            <td>/movies/genres/:Genre</td>
             <td>None</td>
-            <td>A JSON object adding new movies data. Example: {title, director, genere} </td>
-            <td>A JSON object holding data about the movie that was added.</td>
+            <td>
+              A JSON object holding data about a single genre. Format:<br>
+              {<span>Name:</span> String,<br>
+              <span>Description:</span> String<br>
+              }<br>
+            </td>
           </tr>
-
           <tr>
-            <td>Allow users to remove a movie from their list of favorites (showing only a text that a movie has been removed—more on this later)</td>
-            <td>DELETE</td>
-            <td>/movies/:id</td>
-            <td>/movies/:id</td>
+            <td>Return data about a director (bio, birth year, death year) by name</td>
+            <td>GET</td>
+            <td>/movies/director/[Name]</td>
+            <td>/movies/director/:Name</td>
             <td>None</td>
-            <td>A JSON object holding data about the updated list.</td>
+            <td>
+              A JSON object holding data about the director. Format:<br>
+              <span>Director</span>: {<br>
+                <span>Name</span>: String<br>
+                <span>Bio</span>: String<br>
+                <span>Birth</span>: Date,<br>
+                <span>Death</span>: Date<br>
+              }<br>
+            </td>
           </tr>
-
-
+          <tr>
+            <td>Allow new users to register</td>
+            <td>POST</td>
+            <td>/users</td>
+            <td>None</td>
+            <td>A JSON object holding data about the user to create. Format:<br>
+            {
+              <span>FavoriteMovies</span>: [12-byte BSON type],<br>
+              <span>_id</span>: 12-byte BSON type,<br>
+              <span>Username</span>: String,<br>
+              <span>Password</span>: String,<br>
+              <span>Email</span>: String,<br>
+              <span>Birth</span>: Date<br>
+            }</td>
+            <td>A JSON object holding data about the user that was added.</td>
+          </tr>
+          <tr>
+            <td>Allow users to update their user info (username)</td>
+            <td>PUT</td>
+            <td>/users/[Username]</td>
+            <td>/users/:Username</td>
+            <td>A JSON object holding (required) data about the user to update.</td>
+            <td>A JSON object holding data that was updated.</td>
+          </tr>
+          <tr>
+            <td>Allow users to add a movie to their list of favorites.</td>
+            <td>PATCH</td>
+            <td>/users/[Username]/Movies/[MovieID]</td>
+            <td>/users/:Username/Movies/:MovieID</td>
+            <td>None</td>
+            <td>A JSON object holding data about the user with movies on favorite list.</td>
+          </tr>
+          <tr>
+            <td>Allow users to remove a movie from their list of favorites.</td>
+            <td>DELETE</td>
+            <td>/users/[Username]/Movies/[MovieID]</td>
+            <td>/users/:Username/Movies/:MovieID</td>
+            <td>None</td>
+            <td>A JSON object holding data about the updated favorite list.</td>
+          </tr>
+          <tr>
+            <td>Allow existing users to deregister.</td>
+            <td>DELETE</td>
+            <td>/users/[Username]</td>
+            <td>/users/:Username</td>
+            <td>None</td>
+            <td>A text message indicating that the user was deleted</td>
+          </tr>
         </tbody>
       </table>
     </div>
