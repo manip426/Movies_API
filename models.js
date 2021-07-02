@@ -1,47 +1,47 @@
 const mongoose = require('mongoose');
 //const bcrypt = require('bcrypt');
 
-let movieSchema = mongoose.Schema({
+let MovieSchema = mongoose.Schema({
     title: {type: String, required: true},
     description: {type: String, required: true},
-    genre: {
-        name: String,
-        description: String
+    Genre: {
+        Name: String,
+        Description: String
     },
-    director: {
-        name: String,
-        bio: String,
-        birth: Date,
-        death: Date
+    Director: {
+        Name: String,
+        Bio: String,
+        Birth: Date,
+        Death: Date
     },
     imagePath: String,
     featured: Boolean
 })
 
-let userSchema = mongoose.Schema({
-    username: {type: String, required: true},
-    pwd: {type: String, required: true},
-    email: {type: String, required: true},
-    birth_date: Date,
+let UserSchema = mongoose.Schema({
+    Usename: {type: String, required: true},
+    Password: {type: String, required: true},
+    Email: {type: String, required: true},
+    Birthday: Date,
     favorite_movies: [{type: mongoose.Schema.Types.ObjectId, ref: 'Movie'}]
 })
 
-let genreSchema = mongoose.Schema({
-    name: String,
-    description: String
+let GenreSchema = mongoose.Schema({
+    Name: String,
+    Description: String
 })
 
-let directorSchema = mongoose.Schema({
-  name: String,
-  bio: String,
-  birth: Date,
-  death: Date
+let DirectorSchema = mongoose.Schema({
+  Name: String,
+  Bio: String,
+  Birth: Date,
+  Death: Date
 })
 
-let Movie = mongoose.model('Movie', movieSchema);
-let User = mongoose.model('User', userSchema);
-let Genre = mongoose.model('Genre', genreSchema);
-let Director = mongoose.model('Director', directorSchema);
+let Movie = mongoose.model('Movie', MovieSchema);
+let User = mongoose.model('User', UserSchema);
+let Genre = mongoose.model('Genre', GenreSchema);
+let Director = mongoose.model('Director', DirectorSchema);
 
 module.exports.Movie = Movie;
 module.exports.User = User;

@@ -184,9 +184,9 @@ app.post("/users", (req, res) => {
             Usename: req.body.Usename,
             Password: req.body.Password,
             Email: req.body.Email,
-            Birthday: req.body.Birthday
+            Birthday: req.body.Birthday,
           })
-          .then((user) =>{
+          .then((user) => {
             res.status(201).json(user);
            })
         .catch((error) => {
@@ -214,9 +214,11 @@ app.post("/users", (req, res) => {
   (required)
   Birthday: Date
 }*/
-app.put('/users/:Username', (req, res) => {
-  Users.findOneAndUpdate({ Usename: req.params.Usename }, { $set:
+app.put("/users/:Username", (req, res) => {
+  Users.findOneAndUpdate(
+    { Usename: req.params.Usename },
     {
+      $set: {
       Usename: req.body.Usename,
       Password: req.body.Password,
       Email: req.body.Email,
@@ -231,7 +233,8 @@ app.put('/users/:Username', (req, res) => {
     } else {
       res.json(updatedUser);
     }
-  });
+  }
+);
 });
 
 // Add a movie to a user's list of favorites
@@ -249,6 +252,8 @@ app.post('/users/:Username/movies/:MovieID', (req, res) => {
     }
   });
 });
+
+
 
 // Delete a user by username
 app.delete('/users/:Username', (req, res) => {
