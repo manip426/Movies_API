@@ -13,10 +13,10 @@ const Models = require("./models.js");
 
 const Movies = Models.Movie;
 const Users = Models.User;
-const Genres = Models.Genre;
-const Directors = Models.Director;
+//const Genres = Models.Genre;
+//const Directors = Models.Director;
 mongoose.connect('mongodb://localhost:27017/myFlixDB', { useNewUrlParser: true, useUnifiedTopology: true });
-
+mongoose.set('useFindAndModify', false);
 app.use(bodyParser.json());
 //app.use(morgan("common"));
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -216,7 +216,7 @@ app.post("/users", (req, res) => {
 }*/
 app.put("/users/:Username", (req, res) => {
   Users.findOneAndUpdate(
-    { Usename: req.params.Usename },
+    { Usename: req.params.Username },
     {
       $set: {
       Usename: req.body.Usename,
@@ -239,7 +239,7 @@ app.put("/users/:Username", (req, res) => {
 
 // Add a movie to a user's list of favorites
 app.post('/users/:Username/movies/:MovieID', (req, res) => {
-  Users.findOneAndUpdate({ Username: req.params.Username }, {
+  Users.findOneAndUpdate({ Usename: req.params.Username }, {
      $push: { FavoriteMovies: req.params.MovieID }
    },
    { new: true }, // This line makes sure that the updated document is returned
@@ -257,12 +257,12 @@ app.post('/users/:Username/movies/:MovieID', (req, res) => {
 
 // Delete a user by username
 app.delete('/users/:Username', (req, res) => {
-  Users.findOneAndRemove({ Usename: req.params.Usename })
+  Users.findOneAndRemove({ Usename: req.params.Username })
     .then((user) => {
       if (!user) {
-        res.status(400).send(req.params.Usename + ' was not found');
+        res.status(400).send(req.params.Username + ' was not found');
       } else {
-        res.status(200).send(req.params.Usename + ' was deleted.');
+        res.status(200).send(req.params.Username + ' was deleted.');
       }
     })
     .catch((err) => {

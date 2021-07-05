@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-//const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt');
 
 let MovieSchema = mongoose.Schema({
     title: {type: String, required: true},
@@ -26,27 +26,27 @@ let UserSchema = mongoose.Schema({
     favorite_movies: [{type: mongoose.Schema.Types.ObjectId, ref: 'Movie'}]
 })
 
-let GenreSchema = mongoose.Schema({
-    Name: String,
-    Description: String
-})
+//let GenreSchema = mongoose.Schema({
+  //  Name: String,
+  //  Description: String
+//})
 
-let DirectorSchema = mongoose.Schema({
-  Name: String,
-  Bio: String,
-  Birth: Date,
-  Death: Date
-})
+//let DirectorSchema = mongoose.Schema({
+//  Name: String,
+//  Bio: String,
+//  Birth: Date,
+//  Death: Date
+//})
 
 let Movie = mongoose.model('Movie', MovieSchema);
 let User = mongoose.model('User', UserSchema);
-let Genre = mongoose.model('Genre', GenreSchema);
-let Director = mongoose.model('Director', DirectorSchema);
+//let Genre = mongoose.model('Genre', GenreSchema);
+//let Director = mongoose.model('Director', DirectorSchema);
 
 module.exports.Movie = Movie;
 module.exports.User = User;
-module.exports.Genre = Genre;
-module.exports.Director = Director;
+//module.exports.Genre = Genre;
+//module.exports.Director = Director;
 
 
 // Function that encrypts the password
