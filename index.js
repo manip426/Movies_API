@@ -6,87 +6,39 @@ const express = require("express"),
   uuid = require("uuid");
 
 //const morgan = require("morgan");
-// Declares a new variable to encapsulate the Express's functionality.
 const app = express();
 const mongoose = require("mongoose");
 const Models = require("./models.js");
+const { check, validationResult } = require('express-validator');
+
 
 const Movies = Models.Movie;
 const Users = Models.User;
-//const Genres = Models.Genre;
-//const Directors = Models.Director;
 mongoose.connect('mongodb://localhost:27017/myFlixDB', { useNewUrlParser: true, useUnifiedTopology: true });
 mongoose.set('useFindAndModify', false);
 app.use(bodyParser.json());
 //app.use(morgan("common"));
 app.use(bodyParser.urlencoded({ extended: true }));
-// Top 10 movies of all time.
-let movies = [{
-        id: 1,
-        title: "Silence of the Lambs",
-        director: "Jonathan Demme",
-        genres: "Thriller",
-    },
-    {
-       id: 2,
-        title: "Any Given Sunday",
-        director: "Oliver Stone",
-        genres: "Drama",
-    }, {
-        id: 3,
-        title: "Donnie Brasco",
-        director: "Mike Newell",
-        genres: "Drama",
-    }, {
-        id: 4,
-        title: "Taxi Driver",
-        director: "Martin Scorsese",
-        genres: "Crime",
-    }, {
-        id: 5,
-        title: "The Irishman",
-        director: "Martin Scorsese",
-        genres: "Crime",
-    }, {
-        id: 6,
-        title: "The Wolf of Wall Street",
-        director: "Martin Scorsese",
-        genres: "Crime",
-    }, {
-        id: 7,
-        title: "Goodfellas",
-        director: "Martin Scorsese",
-        genres: "Drama",
-    }, {
-        id: 8,
-        title: "Reservoir Dogs",
-        director: "Quentin Tarantino",
-        genres: "Drama",
-    }, {
-        id: 9,
-        title: "Pulp Fiction",
-        director: "Quentin Tarantino",
-        genres: "Drama",
-    }, {
-        id: 10,
-        title: "Jackie Brown",
-        director: "Quentin Tarantino",
-        genres: "Drama",
-    }
-];
+
+
+//authentication
+let auth = require('./auth')(app);
+const passport = require('passport');
+require('./passport');
+
 
 //Serving static files middleware
+app.use("/", express.static("public"));
 
-app.use(express.static('public'));
 
-
-// GET route located at the endpoint "/" that return a default textual respomse
+// Home Page
 app.get("/", (req, res) => {
     res.send("Welcome to my movie API!");
 });
 
-//Express GET route located at the endpoint "/movies" that return a JSON object containing data about my top ten movies
-app.get('/movies', (req, res) => {
+// Return all the movies in json format
+app.get('/movies', passport.authenticate("jwt", { session: false }),
+(req, res) => {
   Movies.find()
   .then((movies) => {
      res.status(201).json(movies);
@@ -98,7 +50,8 @@ app.get('/movies', (req, res) => {
 });
 
 // Get all users
-app.get('/users', (req, res) => {
+app.get('/users',
+(req, res) => {
   Users.find()
     .then((users) => {
       res.status(201).json(users);
@@ -111,7 +64,8 @@ app.get('/users', (req, res) => {
 
 
 // Gets the data about a single movie, by title
-app.get("/movies/:Title", (req, res) => {
+app.get("/movies/:Title", passport.authenticate("jwt", { session: false }),
+(req, res) => {
   Movies.findOne({Title: req.params.Title})
   .then((movie) => {
      res.json(movie);
@@ -125,7 +79,8 @@ app.get("/movies/:Title", (req, res) => {
 
 //get JSON genre info when looking a particular Genre
 
-app.get("/genre/:Name", (req, res) => {
+app.get("/genre/:Name", passport.authenticate("jwt", { session: false }),
+(req, res) => {
   Genres.findOne({Name: req.params.Name})
   .then((genre) => {
      res.json(genre.Description);
@@ -138,7 +93,8 @@ app.get("/genre/:Name", (req, res) => {
 
 //Get info on director when looking for specific Director
 
-app.get("/director/:Name", (req, res) => {
+app.get("/director/:Name", passport.authenticate("jwt", { session: false }),
+(req, res) => {
   Directors.findOne({Name: req.params.Name})
   .then((director) => {
      res.json(director);
@@ -163,7 +119,8 @@ app.get("/director/:Name", (req, res) => {
 //  }
 //});
 // Deletes a movie from our list by ID
-app.delete('/movies/:id', (req, res) => {
+app.delete('/movies/:id', passport.authenticate("jwt", { session: false }),
+(req, res) => {
   let movie = movies.find((movie) => { return movie.id === req.params.id });
 
   if (movie) {
@@ -175,13 +132,13 @@ app.delete('/movies/:id', (req, res) => {
 
 //allow users to register
 app.post("/users", (req, res) => {
-  Users.findOne({ Usename: req.body.Usename })
+  Users.findOne({ Username: req.body.Username })
     .then((user) => {
       if (user) {
-        return res.status(400).send(req.body.Usename + 'already exists');
+        return res.status(400).send(req.body.Username + 'already exists');
       } else {
         Users.create({
-            Usename: req.body.Usename,
+            Username: req.body.Username,
             Password: req.body.Password,
             Email: req.body.Email,
             Birthday: req.body.Birthday,
@@ -203,24 +160,19 @@ app.post("/users", (req, res) => {
 
 
 
+
 // Update a user's info, by username
-/* We’ll expect JSON in this format
-{
-  Username: String,
-  (required)
-  Password: String,
-  (required)
-  Email: String,
-  (required)
-  Birthday: Date
-}*/
-app.put("/users/:Username", (req, res) => {
+app.put("/users/:Username", passport.authenticate("jwt", { session: false }),
+(req, res) => {
+  let hashedPassword = Users.hashPassword(req.body.password);
   Users.findOneAndUpdate(
-    { Usename: req.params.Username },
+    {
+      Username: req.params.Username
+    },
     {
       $set: {
-      Usename: req.body.Usename,
-      Password: req.body.Password,
+      Username: req.body.Username,
+      Password: hashedPassword,
       Email: req.body.Email,
       Birthday: req.body.Birthday
     }
@@ -237,27 +189,42 @@ app.put("/users/:Username", (req, res) => {
 );
 });
 
-// Add a movie to a user's list of favorites
-app.post('/users/:Username/movies/:MovieID', (req, res) => {
-  Users.findOneAndUpdate({ Usename: req.params.Username }, {
-     $push: { FavoriteMovies: req.params.MovieID }
-   },
-   { new: true }, // This line makes sure that the updated document is returned
-  (err, updatedUser) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send('Error: ' + err);
-    } else {
-      res.json(updatedUser);
-    }
-  });
-});
+// Allow users to add a movie to their list of favorites
+app.post(
+  "/users/:username/:favoritemovies",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Users.findOneAndUpdate(
+      {
+        username: req.params.username,
+      },
+      {
+        $push: {
+          favoritemovies: req.params.favoritemovies,
+        },
+      },
+      {
+        new: true,
+      },
+      (err, updatedUser) => {
+        if (err) {
+          console.error(err);
+          res.status(500).send("Error: " + err);
+        } else {
+          res.json(updatedUser);
+        }
+      }
+    );
+  }
+);
+
 
 
 
 // Delete a user by username
-app.delete('/users/:Username', (req, res) => {
-  Users.findOneAndRemove({ Usename: req.params.Username })
+app.delete('/users/:Username', passport.authenticate("jwt", { session: false }),
+(req, res) => {
+  Users.findOneAndRemove({ Username: req.params.Username })
     .then((user) => {
       if (!user) {
         res.status(400).send(req.params.Username + ' was not found');
