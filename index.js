@@ -81,7 +81,7 @@ app.get("/movies/:Title", passport.authenticate("jwt", { session: false }),
 
 app.get("/genre/:Name", passport.authenticate("jwt", { session: false }),
 (req, res) => {
-  Genres.findOne({Name: req.params.Name})
+  Genre.findOne({Name: req.params.Name})
   .then((genre) => {
      res.json(genre.Description);
 })
@@ -162,9 +162,10 @@ app.post("/users", (req, res) => {
 
 
 // Update a user's info, by username
+
 app.put("/users/:Username", passport.authenticate("jwt", { session: false }),
 (req, res) => {
-  let hashedPassword = Users.hashPassword(req.body.password);
+
   Users.findOneAndUpdate(
     {
       Username: req.params.Username
@@ -172,7 +173,7 @@ app.put("/users/:Username", passport.authenticate("jwt", { session: false }),
     {
       $set: {
       Username: req.body.Username,
-      Password: hashedPassword,
+      Password: req.body.Password,
       Email: req.body.Email,
       Birthday: req.body.Birthday
     }
@@ -222,6 +223,7 @@ app.post(
 
 
 // Delete a user by username
+
 app.delete('/users/:Username', passport.authenticate("jwt", { session: false }),
 (req, res) => {
   Users.findOneAndRemove({ Username: req.params.Username })
